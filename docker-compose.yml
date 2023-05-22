@@ -1,0 +1,56 @@
+version: '3.8'
+
+networks:
+  test-work:
+
+services:
+  nginx:
+    image: nginx:stable-alpine
+    container_name: nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./src:/var/www
+      - ./nginx/conf.d:/etc/nginx/conf.d
+      - ./nginx/log:/var/log/nginx
+    depends_on:
+      - php
+      - pgsql
+    networks:
+      - test-work
+  pgsql:
+    image: postgres
+    container_name: pgsql
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: root
+      POSTGRES_DB: test_db
+    volumes:
+      - ./pgsql:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - test-work
+  php:
+    build: ./php
+    working_dir: /var/www
+    container_name: php
+    volumes:
+      - ./src:/var/www
+    ports:
+      - "9000:9000"
+    networks:
+      - test-work
+    tty: true
+  redis:
+    image: redis:7.0.10-alpine
+    container_name: redis
+    restart: always
+    ports:
+      - '6379:6379'
+    command: redis-server --save 20 1 --loglevel warning --requirepass eYVX7EWVmmxKPCTmwrtyKVge8oLd2t81
+    volumes:
+      - ./cache:/data
+    networks:
+      - test-work
